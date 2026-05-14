@@ -14,153 +14,113 @@ export default function Admin() {
   useEffect(() => { fetchData(); }, []);
 
   async function fetchData() {
-    const [{ data: j }, { data: u }] = await Promise.all([
-      supabase.from('jobs').select('*').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*').order('created_at', { ascending: false })
+    const [{ data:j },{ data:u }] = await Promise.all([
+      supabase.from('jobs').select('*').order('created_at',{ascending:false}),
+      supabase.from('profiles').select('*').order('created_at',{ascending:false})
     ]);
-    setJobs(j || []);
-    setUsers(u || []);
-    setLoading(false);
+    setJobs(j||[]); setUsers(u||[]); setLoading(false);
   }
 
-  if (profile?.role !== 'admin') {
-    return <div style={{ textAlign: 'center', padding: 80, fontSize: 18, color: '#6b7280' }}>🔒 Admin huquqi yo'q</div>;
-  }
+  if (profile?.role !== 'admin') return <div style={{ textAlign:'center', padding:80, fontSize:18, color:'#71717A' }}>🔒 Admin huquqi yo'q</div>;
 
   async function updateJobStatus(id, status) {
-    await supabase.from('jobs').update({ status }).eq('id', id);
-    setJobs(jobs.map(j => j.id === id ? { ...j, status } : j));
-    toast.success(status === 'approved' ? t(lang,'approved') : t(lang,'rejected'));
+    await supabase.from('jobs').update({ status }).eq('id',id);
+    setJobs(jobs.map(j => j.id===id ? {...j,status} : j));
+    toast.success(status==='approved' ? '✅ Tasdiqlandi' : '❌ Rad etildi');
   }
 
   async function updateUserRole(id, role) {
-    await supabase.from('profiles').update({ role }).eq('id', id);
-    setUsers(users.map(u => u.id === id ? { ...u, role } : u));
-    toast.success('Rol yangilandi');
+    await supabase.from('profiles').update({ role }).eq('id',id);
+    setUsers(users.map(u => u.id===id ? {...u,role} : u));
+    toast.success(t(lang,'roleSaved'));
   }
 
-  const statusColor = { approved: '#ecfdf5', pending: '#fefce8', rejected: '#fef2f2' };
-  const statusText = { approved: '#065f46', pending: '#854d0e', rejected: '#991b1b' };
-
   const stats = [
-    { label: t(lang,'totalJobs'), value: jobs.length, icon: '💼' },
-    { label: t(lang,'pendingJobs'), value: jobs.filter(j => j.status === 'pending').length, icon: '⏳' },
-    { label: t(lang,'totalUsers'), value: users.length, icon: '👥' },
-    { label: 'Ish beruvchilar', value: users.filter(u => u.role === 'employer').length, icon: '🏢' },
+    { icon:'💼', num: jobs.length, label: t(lang,'totalJobs'), bg:'#EBF5FF', color:'#1A56DB' },
+    { icon:'⏳', num: jobs.filter(j=>j.status==='pending').length, label: t(lang,'pendingJobs'), bg:'#FFFBEB', color:'#D97706' },
+    { icon:'✅', num: jobs.filter(j=>j.status==='approved').length, label: t(lang,'approved'), bg:'#F0FDF4', color:'#16A34A' },
+    { icon:'👥', num: users.length, label: t(lang,'totalUsers'), bg:'#F4F4F5', color:'#0A0A0A' },
   ];
 
   return (
-    <div style={styles.page}>
-      <h1 style={styles.title}>🛡️ {t(lang,'adminPanel')}</h1>
+    <div style={S.page}>
+      <h1 style={S.title}>🛡️ {t(lang,'adminPanel')}</h1>
 
-      {/* Stats */}
-      <div style={styles.statsGrid}>
+      <div style={S.statsGrid}>
         {stats.map((s,i) => (
-          <div key={i} style={styles.statCard}>
-            <span style={styles.statIcon}>{s.icon}</span>
-            <span style={styles.statValue}>{s.value}</span>
-            <span style={styles.statLabel}>{s.label}</span>
+          <div key={i} style={{ ...S.statCard, background:s.bg }}>
+            <span style={{ fontSize:28 }}>{s.icon}</span>
+            <span style={{ fontSize:32, fontWeight:800, color:s.color }}>{s.num}</span>
+            <span style={{ fontSize:13, color:'#71717A' }}>{s.label}</span>
           </div>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div style={styles.tabs}>
-        {['jobs','users'].map(tab2 => (
-          <button key={tab2} onClick={() => setTab(tab2)}
-            style={{ ...styles.tab, ...(tab === tab2 ? styles.tabActive : {}) }}>
-            {tab2 === 'jobs' ? `💼 ${t(lang,'allJobs')}` : `👥 ${t(lang,'users')}`}
+      <div style={S.tabs}>
+        {['jobs','users'].map(tb => (
+          <button key={tb} onClick={() => setTab(tb)}
+            style={{ ...S.tab, ...(tab===tb ? S.tabActive : {}) }}>
+            {tb==='jobs' ? `💼 ${t(lang,'allJobs')}` : `👥 ${t(lang,'users')}`}
           </button>
         ))}
       </div>
 
-      {loading ? <p style={{ color: '#9ca3af' }}>{t(lang,'loading')}</p> : (
-        tab === 'jobs' ? (
-          <div style={styles.table}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {[t(lang,'jobTitle'), t(lang,'company'), t(lang,'city'), t(lang,'status'), t(lang,'actions')].map(h => (
-                    <th key={h} style={styles.th}>{h}</th>
-                  ))}
+      {loading ? <p style={{ color:'#A1A1AA' }}>{t(lang,'loading')}</p> : (
+        <div style={S.tableWrap}>
+          <table style={{ width:'100%', borderCollapse:'collapse' }}>
+            <thead>
+              <tr style={{ background:'#FAFAFA' }}>
+                {(tab==='jobs'
+                  ? [t(lang,'jobTitle'), t(lang,'company'), t(lang,'city'), 'Status', t(lang,'approve')]
+                  : [t(lang,'name'), t(lang,'email'), 'Rol', 'O\'zgartirish']
+                ).map(h => <th key={h} style={S.th}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {tab==='jobs' ? jobs.map(job => (
+                <tr key={job.id} style={{ borderBottom:'1px solid #F4F4F5' }}>
+                  <td style={S.td}><span style={{ fontWeight:500 }}>{job.title}</span></td>
+                  <td style={S.td}>{job.company_name}</td>
+                  <td style={S.td}>{job.city}</td>
+                  <td style={S.td}><span className={`badge-status-${job.status||'pending'}`}>{t(lang,job.status||'pending')}</span></td>
+                  <td style={S.td}>
+                    <div style={{ display:'flex', gap:6 }}>
+                      {job.status!=='approved' && <button onClick={() => updateJobStatus(job.id,'approved')} style={S.approveBtn}>✅</button>}
+                      {job.status!=='rejected' && <button onClick={() => updateJobStatus(job.id,'rejected')} style={S.rejectBtn}>❌</button>}
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {jobs.map(job => (
-                  <tr key={job.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={styles.td}>{job.title}</td>
-                    <td style={styles.td}>{job.company_name}</td>
-                    <td style={styles.td}>{job.city}</td>
-                    <td style={styles.td}>
-                      <span style={{ ...styles.badge, background: statusColor[job.status] || '#f3f4f6', color: statusText[job.status] || '#6b7280' }}>
-                        {t(lang, job.status || 'pending')}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        {job.status !== 'approved' && (
-                          <button onClick={() => updateJobStatus(job.id, 'approved')} style={styles.approveBtn}>✅</button>
-                        )}
-                        {job.status !== 'rejected' && (
-                          <button onClick={() => updateJobStatus(job.id, 'rejected')} style={styles.rejectBtn}>❌</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={styles.table}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {[t(lang,'name'), t(lang,'email'), t(lang,'selectRole'), t(lang,'actions')].map(h => (
-                    <th key={h} style={styles.th}>{h}</th>
-                  ))}
+              )) : users.map(u => (
+                <tr key={u.id} style={{ borderBottom:'1px solid #F4F4F5' }}>
+                  <td style={S.td}><span style={{ fontWeight:500 }}>{u.name}</span></td>
+                  <td style={S.td}>{u.email}</td>
+                  <td style={S.td}><span style={{ fontSize:12, padding:'3px 10px', borderRadius:99, background:'#EBF5FF', color:'#1A56DB', fontWeight:600 }}>{t(lang,u.role)}</span></td>
+                  <td style={S.td}>
+                    <select value={u.role} onChange={e => updateUserRole(u.id,e.target.value)} style={{ padding:'5px 10px', border:'1.5px solid #E4E4E7', borderRadius:8, fontSize:13 }}>
+                      {['seeker','employer','admin'].map(r => <option key={r} value={r}>{t(lang,r)}</option>)}
+                    </select>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {users.map(u => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={styles.td}>{u.name}</td>
-                    <td style={styles.td}>{u.email}</td>
-                    <td style={styles.td}>
-                      <span style={{ ...styles.badge, background: '#eff6ff', color: '#1e40af' }}>{t(lang, u.role)}</span>
-                    </td>
-                    <td style={styles.td}>
-                      <select value={u.role} onChange={e => updateUserRole(u.id, e.target.value)} style={styles.roleSelect}>
-                        {['seeker','employer','admin'].map(r => <option key={r} value={r}>{t(lang,r)}</option>)}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
 }
 
-const styles = {
-  page: { maxWidth: 1100, margin: '32px auto', padding: '0 24px' },
-  title: { fontSize: 26, fontWeight: 700, marginBottom: 24, color: '#111827' },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 16, marginBottom: 28 },
-  statCard: { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 },
-  statIcon: { fontSize: 28 },
-  statValue: { fontSize: 32, fontWeight: 800, color: '#1e40af' },
-  statLabel: { fontSize: 13, color: '#6b7280', textAlign: 'center' },
-  tabs: { display: 'flex', gap: 8, marginBottom: 20 },
-  tab: { padding: '8px 20px', border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', cursor: 'pointer', fontSize: 14 },
-  tabActive: { background: '#1e40af', color: '#fff', border: '1px solid #1e40af' },
-  table: { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' },
-  th: { padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#6b7280', textAlign: 'left', textTransform: 'uppercase', letterSpacing: 0.5 },
-  td: { padding: '12px 16px', fontSize: 14, color: '#374151' },
-  badge: { padding: '3px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600 },
-  approveBtn: { padding: '4px 10px', background: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: 6, cursor: 'pointer', fontSize: 13 },
-  rejectBtn: { padding: '4px 10px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, cursor: 'pointer', fontSize: 13 },
-  roleSelect: { padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13 },
+const S = {
+  page: { maxWidth:1100, margin:'40px auto', padding:'0 24px' },
+  title: { fontSize:26, fontWeight:700, color:'#0A0A0A', marginBottom:28 },
+  statsGrid: { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:16, marginBottom:32 },
+  statCard: { borderRadius:16, padding:'20px 16px', display:'flex', flexDirection:'column', alignItems:'center', gap:6 },
+  tabs: { display:'flex', gap:8, marginBottom:20 },
+  tab: { padding:'9px 20px', border:'1.5px solid #E4E4E7', borderRadius:10, background:'#fff', cursor:'pointer', fontSize:14, fontWeight:500, transition:'all 0.15s' },
+  tabActive: { background:'#0A0A0A', color:'#fff', border:'1.5px solid #0A0A0A' },
+  tableWrap: { background:'#fff', border:'1px solid #E4E4E7', borderRadius:16, overflow:'hidden' },
+  th: { padding:'12px 16px', fontSize:11, fontWeight:700, color:'#A1A1AA', textAlign:'left', textTransform:'uppercase', letterSpacing:'0.8px' },
+  td: { padding:'13px 16px', fontSize:14, color:'#374151' },
+  approveBtn: { padding:'5px 12px', background:'#F0FDF4', border:'1px solid #86EFAC', borderRadius:8, cursor:'pointer', fontSize:13 },
+  rejectBtn: { padding:'5px 12px', background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, cursor:'pointer', fontSize:13 },
 };

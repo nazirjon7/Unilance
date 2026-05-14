@@ -1,76 +1,76 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n';
+import Logo from './Logo';
 
 export default function Navbar() {
   const { user, profile, lang, changeLang, signOut } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  async function handleLogout() {
-    await signOut();
-    navigate('/');
-  }
+  async function handleLogout() { await signOut(); navigate('/'); setMenuOpen(false); }
 
-  const langs = ['uz', 'ru', 'en'];
+  const isActive = path => location.pathname === path;
 
   return (
-    <nav style={styles.nav}>
-      <div style={styles.inner}>
-        <Link to="/" style={styles.logo}>
-          <span style={styles.logoIcon}>💼</span>
-          {t(lang, 'siteName')}
-        </Link>
+    <nav style={S.nav}>
+      <div style={S.inner}>
+        <Link to="/"><Logo /></Link>
 
-        <div style={styles.right}>
-          <div style={styles.langSwitch}>
-            {langs.map(l => (
+        <div style={S.center}>
+          <Link to="/" style={{ ...S.navLink, ...(isActive('/') ? S.navActive : {}) }}>
+            {t(lang,'allJobs')}
+          </Link>
+          {(profile?.role === 'employer' || profile?.role === 'admin') && (
+            <Link to="/post-job" style={{ ...S.navLink, ...(isActive('/post-job') ? S.navActive : {}) }}>
+              {t(lang,'postJob')}
+            </Link>
+          )}
+          {profile?.role === 'admin' && (
+            <Link to="/admin" style={{ ...S.navLink, ...(isActive('/admin') ? S.navActive : {}) }}>
+              {t(lang,'adminPanel')}
+            </Link>
+          )}
+        </div>
+
+        <div style={S.right}>
+          <div style={S.langSwitch}>
+            {['uz','ru','en'].map(l => (
               <button key={l} onClick={() => changeLang(l)}
-                style={{ ...styles.langBtn, ...(lang === l ? styles.langActive : {}) }}>
-                {l.toUpperCase()}
-              </button>
+                style={{ ...S.langBtn, ...(lang === l ? S.langActive : {}) }}>{l.toUpperCase()}</button>
             ))}
           </div>
 
           {user ? (
-            <div style={styles.userMenu}>
-              <button onClick={() => setMenuOpen(!menuOpen)} style={styles.avatarBtn}>
-                <span style={styles.avatar}>{(profile?.name || user.email)?.[0]?.toUpperCase()}</span>
-                <span style={styles.userName}>{profile?.name || user.email}</span>
-                <span>▾</span>
+            <div style={{ position:'relative' }}>
+              <button onClick={() => setMenuOpen(!menuOpen)} style={S.avatarBtn}>
+                <div style={S.avatar}>{(profile?.name || user.email)?.[0]?.toUpperCase()}</div>
+                <span style={{ fontSize:14, fontWeight:500 }}>{profile?.name?.split(' ')[0] || 'Profil'}</span>
+                <span style={{ fontSize:12, color:'#71717A' }}>▾</span>
               </button>
               {menuOpen && (
-                <div style={styles.dropdown}>
+                <div style={S.dropdown}>
                   {profile?.role === 'employer' && (
-                    <Link to="/post-job" style={styles.dropItem} onClick={() => setMenuOpen(false)}>
-                      ➕ {t(lang, 'postJob')}
+                    <Link to="/my-jobs" style={S.dropItem} onClick={() => setMenuOpen(false)}>
+                      📋 {t(lang,'myJobs')}
                     </Link>
                   )}
-                  {profile?.role === 'employer' && (
-                    <Link to="/my-jobs" style={styles.dropItem} onClick={() => setMenuOpen(false)}>
-                      📋 {t(lang, 'myJobs')}
-                    </Link>
-                  )}
-                  {profile?.role === 'admin' && (
-                    <Link to="/admin" style={styles.dropItem} onClick={() => setMenuOpen(false)}>
-                      🛡️ {t(lang, 'adminPanel')}
-                    </Link>
-                  )}
-                  <Link to="/profile" style={styles.dropItem} onClick={() => setMenuOpen(false)}>
-                    👤 {t(lang, 'profile')}
+                  <Link to="/profile" style={S.dropItem} onClick={() => setMenuOpen(false)}>
+                    👤 {t(lang,'profile')}
                   </Link>
-                  <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #eee' }} />
-                  <button onClick={handleLogout} style={{ ...styles.dropItem, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                    🚪 {t(lang, 'logout')}
+                  <div style={{ margin:'4px 8px', borderTop:'1px solid #F4F4F5' }} />
+                  <button onClick={handleLogout} style={{ ...S.dropItem, color:'#DC2626', background:'none', border:'none', cursor:'pointer', width:'100%', textAlign:'left' }}>
+                    🚪 {t(lang,'logout')}
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Link to="/login" style={styles.loginBtn}>{t(lang, 'login')}</Link>
-              <Link to="/register" style={styles.registerBtn}>{t(lang, 'register')}</Link>
+            <div style={{ display:'flex', gap:8 }}>
+              <Link to="/login" style={S.loginBtn}>{t(lang,'login')}</Link>
+              <Link to="/register" style={S.registerBtn}>{t(lang,'register')}</Link>
             </div>
           )}
         </div>
@@ -79,21 +79,20 @@ export default function Navbar() {
   );
 }
 
-const styles = {
-  nav: { background: '#fff', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 50 },
-  inner: { maxWidth: 1200, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  logo: { display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 20, color: '#1e40af', textDecoration: 'none' },
-  logoIcon: { fontSize: 22 },
-  right: { display: 'flex', alignItems: 'center', gap: 16 },
-  langSwitch: { display: 'flex', background: '#f3f4f6', borderRadius: 8, padding: 2, gap: 2 },
-  langBtn: { padding: '4px 10px', fontSize: 12, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer', borderRadius: 6, color: '#6b7280' },
-  langActive: { background: '#fff', color: '#1e40af', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
-  userMenu: { position: 'relative' },
-  avatarBtn: { display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 14 },
-  avatar: { width: 28, height: 28, borderRadius: '50%', background: '#1e40af', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 },
-  userName: { fontSize: 14, fontWeight: 500 },
-  dropdown: { position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: 200, padding: 6, zIndex: 100 },
-  dropItem: { display: 'block', padding: '8px 12px', fontSize: 14, color: '#374151', textDecoration: 'none', borderRadius: 6, cursor: 'pointer' },
-  loginBtn: { padding: '8px 18px', border: '1px solid #1e40af', borderRadius: 8, color: '#1e40af', textDecoration: 'none', fontSize: 14, fontWeight: 500 },
-  registerBtn: { padding: '8px 18px', background: '#1e40af', borderRadius: 8, color: '#fff', textDecoration: 'none', fontSize: 14, fontWeight: 500 },
+const S = {
+  nav: { background:'#fff', borderBottom:'1px solid #E4E4E7', position:'sticky', top:0, zIndex:50 },
+  inner: { maxWidth:1200, margin:'0 auto', padding:'0 24px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between', gap:24 },
+  center: { display:'flex', gap:4, flex:1, justifyContent:'center' },
+  navLink: { padding:'6px 14px', borderRadius:8, fontSize:14, fontWeight:500, color:'#71717A', transition:'all 0.15s' },
+  navActive: { background:'#F4F4F5', color:'#0A0A0A' },
+  right: { display:'flex', alignItems:'center', gap:12 },
+  langSwitch: { display:'flex', background:'#F4F4F5', borderRadius:8, padding:2, gap:2 },
+  langBtn: { padding:'4px 10px', fontSize:11, fontWeight:700, border:'none', background:'none', cursor:'pointer', borderRadius:6, color:'#71717A', letterSpacing:'0.3px' },
+  langActive: { background:'#fff', color:'#0A0A0A', boxShadow:'0 1px 3px rgba(0,0,0,0.1)' },
+  avatarBtn: { display:'flex', alignItems:'center', gap:8, background:'none', border:'1px solid #E4E4E7', borderRadius:10, padding:'6px 12px', cursor:'pointer', transition:'all 0.15s' },
+  avatar: { width:28, height:28, borderRadius:'50%', background:'#1A56DB', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700 },
+  dropdown: { position:'absolute', right:0, top:'calc(100% + 6px)', background:'#fff', border:'1px solid #E4E4E7', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.1)', minWidth:200, padding:6, zIndex:100 },
+  dropItem: { display:'block', padding:'8px 12px', fontSize:14, color:'#374151', textDecoration:'none', borderRadius:8 },
+  loginBtn: { padding:'8px 18px', border:'1.5px solid #E4E4E7', borderRadius:10, color:'#0A0A0A', fontSize:14, fontWeight:500 },
+  registerBtn: { padding:'8px 18px', background:'#1A56DB', borderRadius:10, color:'#fff', fontSize:14, fontWeight:500 },
 };
